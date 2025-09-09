@@ -1,0 +1,20 @@
+to set the project: npm install
+
+to start the node js application: node server.js
+
+Login logic between node js and react js
+1. node js and react js are seperate servers running on different port
+2. So Session concept will not work
+3. Token System -> 
+    - React will send the username and password
+    - Node Js will verify whether the username and password is correct
+        - Wrong
+            -> It will reply Invalid login 
+        - Success [JWT - Java Web Token]
+            -> It will create a token [secret encrypted code - User information, expiry ]
+            -> That token will be replied or sent to the react
+            -> React will store it in localstorage
+            -> After that -> for every action React will send this token also to the node server
+                -> Node will check whether the token is valid
+                -> If valid it will do the action
+                -> If not valid it will reply "Access Denied"
