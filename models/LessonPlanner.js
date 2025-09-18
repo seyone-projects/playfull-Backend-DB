@@ -47,6 +47,18 @@ const LessonPlannerSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    screenshot1:{
+      type: String,      
+    },
+    screenshot2:{
+      type: String,
+    },
+    screenshot3:{
+      type: String,
+    },
+    screenshot4:{
+      type: String,
+    },   
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt

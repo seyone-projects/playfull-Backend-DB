@@ -25,6 +25,12 @@ const storage = multer.diskStorage({
     } else if (file.fieldname === "trainerAadharImage") {
       cb(null, "uploads/aadhar/");
     }
+    else if (file.fieldname === "educationProof") {
+      cb(null, "uploads/education/");
+    }
+    else if (file.fieldname === "experienceProof") {
+      cb(null, "uploads/experience/");
+    }
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -36,6 +42,8 @@ const uploadMulti = multer({ storage }).fields([
   { name: "image", maxCount: 1 },
   { name: "trainerPanImage", maxCount: 1 },
   { name: "trainerAadharImage", maxCount: 1 },
+  { name: "educationProof", maxCount: 1 },
+  { name: "experienceProof", maxCount: 1 }
 ]);
 
 // 👉 For /update/:id (single file)
@@ -260,6 +268,8 @@ router.post("/add", uploadMulti, async (req, res) => {
     const profileExt = path.extname(req.files.image[0].originalname).slice(1);
     const panExt = req.files.trainerPanImage ? path.extname(req.files.trainerPanImage[0].originalname).slice(1) : null;
     const aadharExt = req.files.trainerAadharImage ? path.extname(req.files.trainerAadharImage[0].originalname).slice(1) : null;
+    const educationProof = req.files.educationProof ? path.extname(req.files.educationProof[0].originalname).slice(1) : null;
+    const experienceProof = req.files.experienceProof ? path.extname(req.files.experienceProof[0].originalname).slice(1) : null;
 
 
     const allowedExt = ["jpg", "png", "JPG", "PNG"];
@@ -271,6 +281,12 @@ router.post("/add", uploadMulti, async (req, res) => {
     }
     if (aadharExt && !allowedExt.includes(aadharExt)) {
       return res.status(400).json({ message: "Invalid Aadhaar image format" });
+    }
+    if (educationProof && !allowedExt.includes(educationProof)) {
+      return res.status(400).json({ message: "Invalid Education Proof image format" });
+    }
+    if (experienceProof && !allowedExt.includes(experienceProof)) {
+      return res.status(400).json({ message: "Invalid Experience Proof image format" });
     }
 
     // ---------------- VALIDATIONS ---------------- //
@@ -368,8 +384,6 @@ router.post("/add", uploadMulti, async (req, res) => {
       if (req.body.trainerBankIfscCode.length !== 11) {
         return res.status(400).json({ message: "Trainer Bank IFSC Code must be exactly 11 characters" });
       }
-
-
     }
 
     // ---------------- CREATE USER ---------------- //
@@ -403,6 +417,8 @@ router.post("/add", uploadMulti, async (req, res) => {
       trainerBankAccountNumber: req.body.trainerBankAccountNumber,
       trainerBankIfscCode: req.body.trainerBankIfscCode,
       trainerBankBranch: req.body.trainerBankBranch,
+      educationProof: educationProof,
+      experienceProof: experienceProof
     });
 
     const savedUser = await user.save();
@@ -427,7 +443,21 @@ router.post("/add", uploadMulti, async (req, res) => {
       fs.renameSync(oldAadhar, newAadhar);
     }
 
-     // Send Mail after trainer is saved 
+    //education
+    if (req.files.educationProof) {
+      const oldEducation = req.files.educationProof[0].path;
+      const newEducation = path.join("uploads/education/", savedUser._id + "." + educationProof);
+      fs.renameSync(oldEducation, newEducation);
+    }
+
+    //experience
+    if (req.files.experienceProof) {
+      const oldExperience = req.files.experienceProof[0].path;
+      const newExperience = path.join("uploads/experience/", savedUser._id + "." + experienceProof);
+      fs.renameSync(oldExperience, newExperience);
+    }
+
+    // Send Mail after trainer is saved 
     if (req.body.role === "trainer") {
       const subject = "Welcome to Playful Pencil";
 
@@ -436,34 +466,35 @@ router.post("/add", uploadMulti, async (req, res) => {
         .toLocaleDateString("en-GB"); // en-GB gives dd/mm/yyyy
 
       const htmlContent = `
-       <h3>Dear ${savedUser.username},</h3>
-<p>We are delighted to welcome you to the <b>Playful Pencil Team</b> as a valued Trainer!  Your account has been successfully created, and you can now access our training portal.</p>
-
-<h4>Here are your login details:</h4>
-<ul>
-  <li>🔑 <b>Username / Mobile:</b> ${savedUser.mobile}</li> 
-  <li>🔒 <b>Temporary Password:</b> ${req.body.password}</li>
-  <li>🌐 <b>Login Portal:</b> <a href="https://seyone.co/" target="_blank">Click Here</a></li>
-</ul>
-<p>👉 Please log in using the above credentials and <b>change your password </b> immediately for security.</p>
-<h4>📌 Your Responsibilities:</h4>
-<ul>
-  <li> Access and manage your assigned courses.</li>
-  <li> Upload and maintain training materials/resources.</li>
-  <li> Track student progress and provide timely feedback.</li>
-  <li> Conduct classes/sessions as per the schedule.</li>
-</ul>
-
-<p>We look forward to your valuable contribution in shaping our students’ learning journey 🚀.</p>
-
-<p>If you have any questions or require support, feel free to reach us at <b>[support@seyone.co / 9043062245]</b>.</p>
-
-<p>Once again, welcome to <b>Playful Pencil</b>!<br/><br/>Best regards,<br/><b>Playful Pencil Team</b></p>
-
-      `;
+             <h3>Dear ${savedUser.username},</h3>
+      <p>We are delighted to welcome you to the <b>Playful Pencil Team</b> as a valued Trainer!  Your account has been successfully created, and you can now access our training portal.</p>
+      
+      <h4>Here are your login details:</h4>
+      <ul>
+        <li>🔑 <b>Username / Mobile:</b> ${savedUser.mobile}</li> 
+        <li>🔒 <b>Temporary Password:</b> ${req.body.password}</li>
+        <li>🌐 <b>Login Portal:</b> <a href="https://seyone.co/" target="_blank">Click Here</a></li>
+      </ul>
+      <p>👉 Please log in using the above credentials and <b>change your password </b> immediately for security.</p>
+      <h4>📌 Your Responsibilities:</h4>
+      <ul>
+        <li> Access and manage your assigned courses.</li>
+        <li> Upload and maintain training materials/resources.</li>
+        <li> Track student progress and provide timely feedback.</li>
+        <li> Conduct classes/sessions as per the schedule.</li>
+      </ul>
+      
+      <p>We look forward to your valuable contribution in shaping our students’ learning journey 🚀.</p>
+      
+      <p>If you have any questions or require support, feel free to reach us at <b>[support@seyone.co / 9043062245]</b>.</p>
+      
+      <p>Once again, welcome to <b>Playful Pencil</b>!<br/><br/>Best regards,<br/><b>Playful Pencil Team</b></p>
+      
+            `;
 
       await sendHtmlEmail(savedUser.email, subject, htmlContent);
     }
+
 
     // Send Mail after student is saved
     if (req.body.role === "student") {
@@ -474,33 +505,33 @@ router.post("/add", uploadMulti, async (req, res) => {
         .toLocaleDateString("en-GB"); // en-GB gives dd/mm/yyyy
 
       const htmlContent = `
-      <h3>Dear ${savedUser.username},</h3>
-<p>Welcome to <b>Playful Pencil</b>! We are excited to have you on board. Your account has been successfully created, and you can now access our learning portal.</p>
-<h4>Here are your login details:</h4>
-<ul>
-  <li>🔑 <b>Username / Mobile:</b> ${savedUser.mobile}</li>
-  <li>🔒 <b>Temporary Password:</b> ${req.body.password}</li>
-  <li>🌐 <b>Login Portal:</b> <a href="https://seyone.co/" target="_blank">Click Here</a></li>
-</ul>
-
-<p>👉 Please log in using the above credentials and <b> change your password </b> immediately for security.</p>
-
-<p>If you face any difficulties, feel free to reach us at <b>[support@seyone.co / 9043062245]</b>.</p>
-
-<p>We’re excited to support you in your learning journey 🚀</p>
-
-<p>Thank you,<br/>Best regards,<br/><b>Playful Pencil Team</b></p>
-
-    `;
+            <h3>Dear ${savedUser.username},</h3>
+      <p>Welcome to <b>Playful Pencil</b>! We are excited to have you on board. Your account has been successfully created, and you can now access our learning portal.</p>
+      <h4>Here are your login details:</h4>
+      <ul>
+        <li>🔑 <b>Username / Mobile:</b> ${savedUser.mobile}</li>
+        <li>🔒 <b>Temporary Password:</b> ${req.body.password}</li>
+        <li>🌐 <b>Login Portal:</b> <a href="https://seyone.co/" target="_blank">Click Here</a></li>
+      </ul>
+      
+      <p>👉 Please log in using the above credentials and <b> change your password </b> immediately for security.</p>
+      
+      <p>If you face any difficulties, feel free to reach us at <b>[support@seyone.co / 9043062245]</b>.</p>
+      
+      <p>We’re excited to support you in your learning journey 🚀</p>
+      
+      <p>Thank you,<br/>Best regards,<br/><b>Playful Pencil Team</b></p>
+      
+          `;
 
       await sendHtmlEmail(savedUser.email, subject, htmlContent);
+
     }
     res.status(200).json({ user: user, message: "User added successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}); 
-
+});
 
 // Update user without password  and with image and rename file to user ID
 router.post("/update/:id", upload.single("image"), async (req, res) => {
@@ -639,7 +670,6 @@ router.post("/update/:id", upload.single("image"), async (req, res) => {
   }
 });
 
-
 // Login User 
 router.post("/login", async (req, res) => {
   const { mobile, password } = req.body;
@@ -668,7 +698,6 @@ router.post("/login", async (req, res) => {
     }
   });
 });
-
 
 //creat a function to get user by token
 router.get("/user", async (req, res) => {
@@ -778,6 +807,91 @@ router.post("/update-member-password/:id", upload.none(), async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Forgot password route
+router.post("/forgot-password", upload.none(), async (req, res) => {
+  try {
+    const { mobile } = req.body;
+
+    // Find user by mobile
+    const user = await User.findOne({ mobile });
+    if (!user) {
+      return res.status(400).json({ message: "User not found with this mobile number" });
+    }
+
+    // Generate random 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // Hash OTP before saving
+    const hashedOtp = await bcrypt.hash(otp.toString(), 10);
+
+    // Update user with hashed OTP
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { password: hashedOtp },
+      { new: true }
+    );
+
+    // Send OTP via email
+    const subject = "Password recovery - Playful pencil";
+    const htmlContent = `
+      <h3>Dear ${user.username},</h3>
+      <p>We have reset your password to <b>${otp}</b></p>
+      <p>Please try to login now with your mobile and this new password.</p>      
+      <p>Best regards,<br/><b>Playful Pencil Team</b></p>
+    `;
+
+    await sendHtmlEmail(user.email, subject, htmlContent);
+
+    res.status(200).json({
+      message: "OTP has been sent to your registered email",
+      userId: user._id
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get redirect URL based on role
+router.post("/single-signin-redirect-url", upload.none(), async (req, res) => {
+  try {
+    const { mobile } = req.body;
+
+    // Find user by mobile number
+    const user = await User.findOne({ mobile });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    let redirectUrl = "";
+
+    // Set redirect URL based on role
+    switch (user.role) {
+      case "admin":
+        redirectUrl = `http://localhost:3000/login?mobile=${mobile}`;
+        break;
+      case "trainer":
+        redirectUrl = `http://localhost:3002/login?mobile=${mobile}`;
+        break;
+      case "student":
+        redirectUrl = `http://localhost:3001/login?mobile=${mobile}`;
+        break;
+      default:
+        redirectUrl = "/";
+    }
+
+
+    res.status(200).json({
+      redirectUrl,
+      role: user.role
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 module.exports = router;
 

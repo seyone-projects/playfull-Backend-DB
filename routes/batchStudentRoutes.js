@@ -98,22 +98,35 @@ router.post("/add", upload.none(), async (req, res) => {
       return res.status(400).json({ message: "Batch ID does not exist" });
     }
 
-    // Validate FeeScheme
-    const feeScheme = await FeeScheme.findById(feeSchemeId);
-    if (!feeScheme) {
-      return res.status(400).json({ message: "Fee Scheme ID does not exist" });
+    let feePayments = [];
+    if (batchExists.fee > 0) {
+      // Only validate FeeSchemeId when batch fee > 0
+      if (!mongoose.Types.ObjectId.isValid(feeSchemeId)) {
+        return res.status(400).json({ message: "Invalid Fee Scheme ID format" });
+      }
+      const feeScheme = await FeeScheme.findById(feeSchemeId);
+      if (!feeScheme) {
+        return res.status(400).json({ message: "Fee Scheme ID does not exist" });
+      }
+      // Get all FeeSchemePayments once
+      feePayments = await FeeSchemePayment.find({ feeSchemeId });
     }
 
-    // Get all FeeSchemePayments once
-    const feePayments = await FeeSchemePayment.find({ feeSchemeId });
-
     const addedStudents = [];
+    const skippedStudents = [];
 
     for (let userId of userIds) {
       // Validate User
       const userExists = await User.findById(userId);
       if (!userExists) {
         continue; // skip invalid users
+      }
+
+      // Check if already exists in this batch
+      const alreadyExists = await BatchStudent.findOne({ batchId, userId });
+      if (alreadyExists) {
+        skippedStudents.push(userId); // keep track of skipped students
+        continue; // skip duplicate
       }
 
       // Create BatchStudent
@@ -143,14 +156,17 @@ router.post("/add", upload.none(), async (req, res) => {
 
     res.status(200).json({
       batchStudents: addedStudents,
-      message: "Selected students added successfully with fee payments"
+      skipped: skippedStudents,
+      message:
+        skippedStudents.length > 0
+          ? "Some students were already mapped and skipped"
+          : "Selected students added successfully with fee payments"
     });
 
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
-
 
 //batch students by batch ID with pagination
 router.get("/batchId/:batchId", async (req, res) => {
@@ -172,8 +188,8 @@ router.get("/batchId/:batchId", async (req, res) => {
 
     // Find batch students with pagination
     const batchStudents = await BatchStudent.find({ batchId: batchId })
-      .populate('userId', 'name email phone')
-      .populate('feeSchemeId', 'name amount')
+      .populate('userId')
+      .populate('feeSchemeId')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
@@ -235,6 +251,85 @@ router.get("/payments/:batchId/:studentId", async (req, res) => {
 
     res.status(200).json({
       payments,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit),
+      totalCount
+    });
+
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+//delete student by batch ID
+router.delete("/delete/:batchId/:studentId", async (req, res) => {
+  try {
+    const { batchId, studentId } = req.params;
+
+    // Validate IDs
+    if (!mongoose.Types.ObjectId.isValid(batchId)) {
+      return res.status(400).json({ message: "Invalid batch ID format" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: "Invalid student ID format" }); 
+    }
+
+    // Find batch student
+    const batchStudent = await BatchStudent.findOne({
+      batchId: batchId,
+      userId: studentId
+    });
+
+    if (!batchStudent) {
+      return res.status(404).json({ message: "Batch student not found" });
+    }
+
+    // Delete associated payments first
+    await BatchStudentPayment.deleteMany({
+      batchStudentId: batchStudent._id
+    });
+
+    // Delete the batch student
+    await BatchStudent.findByIdAndDelete(batchStudent._id);
+
+    res.status(200).json({
+      message: "Student removed successfully from batch"
+    });
+
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+
+router.get("/batches/:studentId", async (req, res) => {
+  try {
+    const studentId = req.params.studentId;
+
+    // Validate student ID format
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: "Invalid student ID format" });
+    }
+
+    // Get page and limit from query params, set defaults if not provided
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get total count of mapped batches for student
+    const totalCount = await BatchStudent.countDocuments({ userId: studentId });
+
+    // Find all batches mapped to student with pagination
+    const mappedBatches = await BatchStudent.find({ userId: studentId })
+      .populate('batchId')
+      .populate('feeSchemeId')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      mappedBatches,
       currentPage: page,
       totalPages: Math.ceil(totalCount / limit),
       totalCount

@@ -212,7 +212,4 @@ router.delete("/delete-students/:batchId/:lessonPlannerId", async (req, res) => 
   }
 });
 
-
-
-
 module.exports = router;

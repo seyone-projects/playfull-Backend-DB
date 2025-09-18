@@ -108,6 +108,12 @@ const UserSchema = new mongoose.Schema(
     trainerBankBranch: {
       type: String,
     },
+    educationProof: {
+      type: String,
+    },
+    experienceProof: {
+      type: String,
+    }
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt

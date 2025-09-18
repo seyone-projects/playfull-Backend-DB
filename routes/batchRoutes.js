@@ -473,6 +473,7 @@ router.post("/updateUsers/:id", upload.none(), async (req, res) => {
       .toLocaleDateString("en-GB")
       .replace(/\//g, "-");
 
+      
     // Prepare email content
   
     const subject = `📢 Your Batch Details – ${ existingBatch.courseId.name } at Playful Pencil`;
@@ -502,7 +503,7 @@ router.post("/updateUsers/:id", upload.none(), async (req, res) => {
       `;
 
       await sendHtmlEmail(student.email, subject, htmlContent);
-    }
+    }  
     
     res.status(200).json({
       batch: updatedBatch,

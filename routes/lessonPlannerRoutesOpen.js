@@ -5,19 +5,21 @@ app.use(express.json());
 
 const router = express.Router();
 
-//get all lesson planners with pagination
+//GET all today's lesson planners with pagination
 router.get("/", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    // Set today's date to midnight
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Set tomorrow's date to midnight 
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Query lesson planners for today's date (no trainer filter)
     const lessonPlanners = await LessonPlanner.find({
       lessonDate: {
         $gte: today,
@@ -31,7 +33,7 @@ router.get("/", async (req, res) => {
           path: "courseId",
           populate: [
             { path: "categoryId", model: "Category" },
-            { path: "subCategoryIds", model: "SubCategory" }  // plural form for array
+            { path: "subCategoryIds", model: "SubCategory" }
           ]
         }
       })
@@ -52,12 +54,13 @@ router.get("/", async (req, res) => {
       currentPage: page,
       totalPages,
       totalItems: total,
-      message: "Lesson planners retrieved successfully"
+      message: "Today's lesson planners retrieved successfully"
     });
   } catch (err) {
-    res.status(500).json({ message: "Error fetching lesson planners", error: err });
+    res.status(500).json({ message: "Error fetching today's lesson planners", error: err });
   }
 });
+
 
 //get lesson planner by id with populate trainerId
 router.get("/lpId/:id", async (req, res) => {

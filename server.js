@@ -41,6 +41,7 @@ const feeSchemePaymentRoutesOpen = require("./routes/feeSchemePaymentRoutesOpen"
 const testmailRoutes = require("./routes/testmailRoutes");
 const batchStudentRoutes = require("./routes/batchStudentRoutes");
 const batchStudentPaymentRoutesOpen = require("./routes/batchStudentPaymentRoutesOpen");
+const leaveRequestRoutes = require("./routes/leaveRequestRoutes");
 
 //to create node js create and add bodyParse - to read the content from post
 const app = express();
@@ -48,6 +49,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const path = require("path");
+const LeaveRequest = require("./models/LeaveRequest");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //to connect to mongo db
@@ -92,6 +94,7 @@ app.use("/api/attendances", attendanceRoutes);
 app.use("/api/feeSchemes", feeSchemeRoutes);
 app.use("/api/feeSchemePayments", feeSchemePaymentRoutes);
 app.use("/api/batchStudents", batchStudentRoutes);
+app.use("/api/leaveRequests/", leaveRequestRoutes);
 
 app.use("/api/testmail", testmailRoutes);
 

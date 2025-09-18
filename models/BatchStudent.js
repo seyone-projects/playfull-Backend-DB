@@ -15,8 +15,7 @@ const BatchStudentSchema = new mongoose.Schema(
     feeSchemeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'FeeScheme',
-      required: true
-    },
+      },
     status: {
       type: String,
       required: true,

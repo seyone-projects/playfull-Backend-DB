@@ -11,24 +11,36 @@ const router = express.Router();
 // Importing required modules
 const multer = require("multer");
 const path = require('path');
+const fs = require('fs');
 
-// Configuring storage for uploaded files
+// Multer setup
 const storage = multer.diskStorage({
-  // Destination folder for storing uploaded files
   destination: function (req, file, cb) {
-    cb(null, "uploads/lessonPlanner"); // Folder where the image will be saved
+    if (file.fieldname === "screenshot1") {
+      cb(null, "uploads/screenshot1/");
+    } else if (file.fieldname === "screenshot2") {
+      cb(null, "uploads/screenshot2/");
+    } else if (file.fieldname === "screenshot3") {
+      cb(null, "uploads/screenshot3/");
+    } else if (file.fieldname === "screenshot4") {
+      cb(null, "uploads/screenshot4/");
+    }
   },
-  // Generating a unique filename for each uploaded file
   filename: function (req, file, cb) {
-    const filenameWithoutExt = Date.now().toString(); // Generate a unique filename without extension
-    const extension = path.extname(file.originalname); // Extract the extension (e.g., .jpg, .png)
-    cb(null, filenameWithoutExt + extension); // Save full filename with extension
-  }
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
 });
+
+// 👉 For /add (multiple fields)
+const uploadMulti = multer({ storage }).fields([
+  { name: "screenshot1", maxCount: 1 },
+  { name: "screenshot2", maxCount: 1 },
+  { name: "screenshot3", maxCount: 1 },
+  { name: "screenshot4", maxCount: 1 },
+]);
 
 // Create multer upload instance with the specified storage configuration
 const upload = multer({ storage: storage });
-
 
 //add lesson planner
 router.post("/add", upload.none(), async (req, res) => {
@@ -107,8 +119,8 @@ router.post("/add", upload.none(), async (req, res) => {
     const allStudents = await User.find({ _id: { $in: allUserIds } });
 
     const batchMonth = batchExists.startDate
-  ? new Date(batchExists.startDate).toLocaleString("en-GB", { month: "long" })
-  : null;
+      ? new Date(batchExists.startDate).toLocaleString("en-GB", { month: "long" })
+      : null;
 
 
     // format lesson date
@@ -125,40 +137,42 @@ router.post("/add", upload.none(), async (req, res) => {
       })
       .toLowerCase(); // to get "6:00pm" instead of "6:00 PM"
 
+
     const subject = `📚 Lesson Plan for ${courseData.name} – ${batchMonth} / ${batchExists.name}`;
 
     for (const student of allStudents) {
       const htmlContent = `
-   <h3>Dear ${student.username},</h3>
+ <h3>Dear ${student.username},</h3>
 <p>Here is your lesson plan to help you prepare in advance:</p>
 
 <p>📌 <b>Batch:</b> ${batchExists.name} (${batchExists.code})<br/>
 👨🏫 <b>Trainer:</b> ${trainerData.username}</p>
 
 <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 14px;">
-  <thead style="background-color: #f2f2f2;">
-    <tr>
-      <th>Date</th>
-      <th>Topic / Lesson Title</th>
-      <th>Notes</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>${formattedDate}</td>
-      <td>${savedLesson.lessonTopic}</td>
-      <td>${savedLesson.lessonDescription || "—"}</td>
-    </tr>
-  </tbody>
+<thead style="background-color: #f2f2f2;">
+  <tr>
+    <th>Date</th>
+    <th>Topic / Lesson Title</th>
+    <th>Notes</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>${formattedDate}</td>
+    <td>${savedLesson.lessonTopic}</td>
+    <td>${savedLesson.lessonDescription || "—"}</td>
+  </tr>
+</tbody>
 </table>
 
 <br/>
 <p>👉 Please review the topics beforehand to get the most out of each class.</p>
 
 <p>Best regards,<br/><b>Playful Pencil Team</b></p>
-  `;
+`;
 
       await sendHtmlEmail(student.email, subject, htmlContent);
+
     }
 
     res.status(200).json({
@@ -172,76 +186,97 @@ router.post("/add", upload.none(), async (req, res) => {
 });
 
 //update lesson planner
-router.post("/update/:id", upload.none(), async (req, res) => {
+
+router.post("/update/:id", uploadMulti, async (req, res) => {
   try {
     const lessonId = req.params.id;
 
-    // Check if lesson exists
-    const lessonExists = await LessonPlanner.findById(lessonId);
-    if (!lessonExists) {
-      return res.status(404).json({ message: "Lesson planner not found" });
+    const screenshot1 = req.files.screenshot1 ? path.extname(req.files.screenshot1[0].originalname).slice(1) : null;
+    const screenshot2 = req.files.screenshot2 ? path.extname(req.files.screenshot2[0].originalname).slice(1) : null;
+    const screenshot3 = req.files.screenshot3 ? path.extname(req.files.screenshot3[0].originalname).slice(1) : null;
+    const screenshot4 = req.files.screenshot4 ? path.extname(req.files.screenshot4[0].originalname).slice(1) : null;
+
+    const allowedExtensions = ['pdf', 'docx', 'png', 'jpg', 'jpeg'];
+
+    if (screenshot1 && !allowedExtensions.includes(screenshot1.toLowerCase())) {
+      return res.status(400).json({ message: "Screenshot 1 must be pdf, docx, png, jpg or jpeg" });
+    }
+    if (screenshot2 && !allowedExtensions.includes(screenshot2.toLowerCase())) {
+      return res.status(400).json({ message: "Screenshot 2 must be pdf, docx, png, jpg or jpeg" });
+    }
+    if (screenshot3 && !allowedExtensions.includes(screenshot3.toLowerCase())) {
+      return res.status(400).json({ message: "Screenshot 3 must be pdf, docx, png, jpg or jpeg" });
+    }
+    if (screenshot4 && !allowedExtensions.includes(screenshot4.toLowerCase())) {
+      return res.status(400).json({ message: "Screenshot 4 must be pdf, docx, png, jpg or jpeg" });
     }
 
-    // Check if trainer exists if trainerId is being updated
+    const lessonExists = await LessonPlanner.findById(lessonId);
+    if (!lessonExists) return res.status(404).json({ message: "Lesson planner not found" });
+
     if (req.body.trainerId) {
       const trainerExists = await User.findById(req.body.trainerId);
-      if (!trainerExists) {
-        return res.status(400).json({ message: "Trainer ID does not exist" });
-      }
+      if (!trainerExists) return res.status(400).json({ message: "Trainer ID does not exist" });
     }
 
-    //check if batch exists if batchId is being updated
     if (req.body.batchId) {
       const batchExists = await Batch.findById(req.body.batchId);
-      if (!batchExists) {
-        return res.status(400).json({ message: "Batch ID does not exist" });
-      }
+      if (!batchExists) return res.status(400).json({ message: "Batch ID does not exist" });
     }
 
-    // Validate required fields if they are being updated
-    if (req.body.lessonTopic === "") {
-      return res.status(400).json({ message: "Lesson topic cannot be empty" });
-    }
+    if (req.body.lessonTopic === "") return res.status(400).json({ message: "Lesson topic cannot be empty" });
+    if (req.body.lessonDate === "") return res.status(400).json({ message: "Lesson date cannot be empty" });
+    if (req.body.lessonTime === "") return res.status(400).json({ message: "Lesson time cannot be empty" });
+    if (req.body.lessonDuration && req.body.lessonDuration <= 0) return res.status(400).json({ message: "Lesson duration must be greater than 0" });
+    if (req.body.lessonDescription === "") return res.status(400).json({ message: "Lesson description cannot be empty" });
+    if (req.body.link === "") return res.status(400).json({ message: "Link cannot be empty" });
 
-    if (req.body.lessonDate === "") {
-      return res.status(400).json({ message: "Lesson date cannot be empty" });
-    }
+    // Build update object dynamically
+    const updateData = {
+      batchId: req.body.batchId,
+      trainerId: req.body.trainerId,
+      lessonTopic: req.body.lessonTopic,
+      lessonDate: req.body.lessonDate,
+      lessonTime: req.body.lessonTime,
+      lessonDuration: req.body.lessonDuration,
+      lessonDescription: req.body.lessonDescription,
+      link: req.body.link,
+      remarks: req.body.remarks,
+      status: req.body.status
+    };
 
-    if (req.body.lessonTime === "") {
-      return res.status(400).json({ message: "Lesson time cannot be empty" });
-    }
+    if (screenshot1) updateData.screenshot1 = screenshot1;
+    if (screenshot2) updateData.screenshot2 = screenshot2;
+    if (screenshot3) updateData.screenshot3 = screenshot3;
+    if (screenshot4) updateData.screenshot4 = screenshot4;
 
-    if (req.body.lessonDuration && req.body.lessonDuration <= 0) {
-      return res.status(400).json({ message: "Lesson duration must be greater than 0" });
-    }
-
-    if (req.body.lessonDescription === "") {
-      return res.status(400).json({ message: "Lesson description cannot be empty" });
-    }
-
-    if (req.body.link === "") {
-      return res.status(400).json({ message: "Link cannot be empty" });
-    }
-
-    // Update lesson planner
     const updatedLesson = await LessonPlanner.findByIdAndUpdate(
       lessonId,
-      {
-        $set: {
-          batchId: req.body.batchId,
-          trainerId: req.body.trainerId,
-          lessonTopic: req.body.lessonTopic,
-          lessonDate: req.body.lessonDate,
-          lessonTime: req.body.lessonTime,
-          lessonDuration: req.body.lessonDuration,
-          lessonDescription: req.body.lessonDescription,
-          link: req.body.link,
-          remarks: req.body.remarks,
-          status: req.body.status
-        }
-      },
+      { $set: updateData },
       { new: true }
     );
+
+    // Rename uploaded screenshots
+    if (req.files.screenshot1) {
+      const newScreenshot1 = path.join("uploads/screenshot1/", updatedLesson._id + "." + screenshot1);
+      if (fs.existsSync(newScreenshot1)) fs.unlinkSync(newScreenshot1);
+      fs.renameSync(req.files.screenshot1[0].path, newScreenshot1);
+    }
+    if (req.files.screenshot2) {
+      const newScreenshot2 = path.join("uploads/screenshot2/", updatedLesson._id + "." + screenshot2);
+      if (fs.existsSync(newScreenshot2)) fs.unlinkSync(newScreenshot2);
+      fs.renameSync(req.files.screenshot2[0].path, newScreenshot2);
+    }
+    if (req.files.screenshot3) {
+      const newScreenshot3 = path.join("uploads/screenshot3/", updatedLesson._id + "." + screenshot3);
+      if (fs.existsSync(newScreenshot3)) fs.unlinkSync(newScreenshot3);
+      fs.renameSync(req.files.screenshot3[0].path, newScreenshot3);
+    }
+    if (req.files.screenshot4) {
+      const newScreenshot4 = path.join("uploads/screenshot4/", updatedLesson._id + "." + screenshot4);
+      if (fs.existsSync(newScreenshot4)) fs.unlinkSync(newScreenshot4);
+      fs.renameSync(req.files.screenshot4[0].path, newScreenshot4);
+    }
 
     res.status(200).json({
       lesson: updatedLesson,
@@ -252,5 +287,6 @@ router.post("/update/:id", upload.none(), async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
 
 module.exports = router;
