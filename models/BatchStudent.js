@@ -22,7 +22,7 @@ const BatchStudentSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt
+    timestamps: true, // Automatically adds createdAt and updatedAtt
   }
 );
 
