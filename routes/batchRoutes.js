@@ -475,7 +475,7 @@ router.post("/updateUsers/:id", upload.none(), async (req, res) => {
 
       
     // Prepare email content
-  
+ 
     const subject = `📢 Your Batch Details – ${ existingBatch.courseId.name } at Playful Pencil`;
     const trainerName = existingBatch.trainerId ? existingBatch.trainerId?.username : "Trainer";
 

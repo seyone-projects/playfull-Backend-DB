@@ -524,7 +524,7 @@ router.post("/add", uploadMulti, async (req, res) => {
       
           `;
 
-      await sendHtmlEmail(savedUser.email, subject, htmlContent);
+      await sendHtmlEmail(savedUser.email, subject, htmlContent);     
 
     }
     res.status(200).json({ user: user, message: "User added successfully" });

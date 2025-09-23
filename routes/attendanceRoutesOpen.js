@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Attendance = require("../models/Attendance");
 const BatchStudent = require("../models/BatchStudent");
 const Batch = require("../models/Batch");
@@ -524,6 +525,186 @@ router.get("/monthly-summary", async (req, res) => {
       success: false,
       message: "Error generating monthly attendance summary",
       error: err
+    });
+  }
+});
+
+//need a route to get the summary of the attendances in a give month-year-userId
+router.get("/monthly-summary-by-studentId", async (req, res) => {
+  try {
+    const { month, year, userId } = req.query;
+
+    // Validate required params
+    if (!month || !year || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Month, year and userId are required"
+      });
+    }
+
+    // Create date range for the given month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    // ✅ Step 1: Find batches where this user is enrolled
+    const batchStudents = await BatchStudent.find({ userId, status: "active" });
+    const batchIds = batchStudents.map(bs => bs.batchId);
+
+    if (batchIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: "No batches found for this user"
+      });
+    }
+
+    // ✅ Step 2: Get attendance data for this month grouped by batchId + userId
+    const attendances = await Attendance.aggregate([
+      {
+        $match: {
+          attendanceDate: { $gte: startDate, $lte: endDate },
+          userId: new mongoose.Types.ObjectId(userId), // ensure ObjectId match
+          batchId: { $in: batchIds.map(id => new mongoose.Types.ObjectId(id)) }
+        }
+      },
+      {
+        $group: {
+          _id: { batchId: "$batchId", userId: "$userId" },
+          presentCount: {
+            $sum: { $cond: [{ $eq: ["$attendanceStatus", "present"] }, 1, 0] }
+          },
+          absentCount: {
+            $sum: { $cond: [{ $eq: ["$attendanceStatus", "absent"] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+
+    // ✅ Step 3: Get batch details
+    const batches = await Batch.find({ _id: { $in: batchIds } });
+
+    // ✅ Step 4: Get user details
+    const user = await User.findById(userId);
+
+    // ✅ Step 5: Format response
+    const summary = batches.map(batch => {
+      const batchAttendance = attendances.find(
+        a => a._id.batchId.toString() === batch._id.toString()
+      );
+
+      if (!batchAttendance) return null;
+
+      return {
+        id: batch._id,
+        name: batch.name,
+        user: [
+          {
+            id: user._id,
+            name: user.username,
+            mobile: user.mobile,
+            absentCount: batchAttendance?.absentCount || 0,
+            presentCount: batchAttendance?.presentCount || 0
+          }
+        ]
+      };
+    })
+    .filter(Boolean);
+    
+    res.status(200).json({
+      success: true,
+      data: summary,
+      message: "Monthly user attendance summary retrieved successfully"
+    });
+
+  } catch (err) {
+    console.error("Error generating monthly user attendance summary:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error generating monthly user attendance summary",
+      error: err.message
+    });
+  }
+});
+
+
+router.get("/monthly-summary-by-trainerId", async (req, res) => {
+  try {
+    const { month, year, userId } = req.query;
+
+    // Validate required params
+    if (!month || !year || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Month, year and userId are required"
+      });
+    }
+
+    // Create date range for the given month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    // Get attendance data for the month grouped by batchId + userId
+    const attendances = await Attendance.aggregate([
+      {
+        $match: {
+          attendanceDate: { $gte: startDate, $lte: endDate },
+          userId: new mongoose.Types.ObjectId(userId)
+        }
+      },
+      {
+        $group: {
+          _id: { batchId: "$batchId", userId: "$userId" },
+          presentCount: {
+            $sum: { $cond: [{ $eq: ["$attendanceStatus", "present"] }, 1, 0] }
+          },
+          absentCount: {
+            $sum: { $cond: [{ $eq: ["$attendanceStatus", "absent"] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    // Get unique batches
+    const batchIds = [...new Set(attendances.map(a => a._id.batchId))];
+    const batches = await Batch.find({ _id: { $in: batchIds } });
+
+    // Get user details
+    const user = await User.findById(userId);
+
+    // Format response
+    const summary = batches.map(batch => {
+      const batchAttendance = attendances.find(
+        a => a._id.batchId.toString() === batch._id.toString()
+      );
+
+      return {
+        id: batch._id,
+        name: batch.name,
+        user: [
+          {
+            id: user._id,
+            name: user.username,
+            mobile: user.mobile,
+            absentCount: batchAttendance?.absentCount || 0,
+            presentCount: batchAttendance?.presentCount || 0
+          }
+        ]
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: summary,
+      message: "Monthly user attendance summary retrieved successfully"
+    });
+
+  } catch (err) {
+    console.error("Error generating monthly user attendance summary:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error generating monthly user attendance summary",
+      error: err.message
     });
   }
 });

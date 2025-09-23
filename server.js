@@ -42,6 +42,8 @@ const testmailRoutes = require("./routes/testmailRoutes");
 const batchStudentRoutes = require("./routes/batchStudentRoutes");
 const batchStudentPaymentRoutesOpen = require("./routes/batchStudentPaymentRoutesOpen");
 const leaveRequestRoutes = require("./routes/leaveRequestRoutes");
+const pageRoutes = require("./routes/pageRoutes");
+const pageRoutesOpen = require("./routes/pageRoutesOpen");
 
 //to create node js create and add bodyParse - to read the content from post
 const app = express();
@@ -77,6 +79,7 @@ app.use("/api/attendances", attendanceRoutesOpen);
 app.use("/api/feeSchemes", feeSchemeRoutesOpen);
 app.use("/api/feeSchemePayments", feeSchemePaymentRoutesOpen);
 app.use("/api/batchStudentPayments", batchStudentPaymentRoutesOpen);
+app.use("/api/pages", pageRoutesOpen);
 
 //activating the route with authetication
 app.use("/api/sections", sectionRoutes);
@@ -95,6 +98,7 @@ app.use("/api/feeSchemes", feeSchemeRoutes);
 app.use("/api/feeSchemePayments", feeSchemePaymentRoutes);
 app.use("/api/batchStudents", batchStudentRoutes);
 app.use("/api/leaveRequests/", leaveRequestRoutes);
+app.use("/api/pages", pageRoutes);
 
 app.use("/api/testmail", testmailRoutes);
 
