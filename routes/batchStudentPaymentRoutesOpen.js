@@ -538,7 +538,7 @@ router.get("/monthly-summary", async (req, res) => {
 
     // Create date range for the given month
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
     // Check if there are any payments in this month (status = paid only)
     const paymentExists = await BatchStudentPayment.exists({
@@ -593,7 +593,7 @@ router.get("/monthly-summary", async (req, res) => {
             });
 
             const totalFee = batch.fee || 0;
-            const totalPending = totalFee - overallPaid; // ✅ pending considers only paid
+            const totalPending = totalFee - overallPaid; // pending considers only paid
             const overallTotal = totalFee;
 
             return {
@@ -649,7 +649,6 @@ router.get("/monthly-summary", async (req, res) => {
     });
   }
 });
-
 
 //get collection reports by userId with date and batch filters
 router.get("/collection-report-by-user", async (req, res) => {

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Course = require("../models/Course");
 const SubCategory = require("../models/SubCategory");
 const Category = require("../models/Category");
+const Batch = require("../models/Batch");
 
 const router = express.Router();
 
@@ -64,6 +65,10 @@ router.post("/add", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "One or more subCategoryIds are not valid ObjectId strings." });
     }
 
+    // Check if description is provided
+    if (!req.body.description) {
+      return res.status(400).json({ message: "Description is required" });
+    }
 
     // Validate that all subcategories exist and belong to the category
     const validSubCategories = await SubCategory.find({
@@ -81,7 +86,8 @@ router.post("/add", upload.single("image"), async (req, res) => {
       subCategoryIds: subCategoryIds,
       name: req.body.name.trim(),
       image: fileExtension,
-      status: "active"
+      status: "active",
+      description: req.body.description.trim(),
     });
 
     const savedCourse = await course.save();
@@ -102,12 +108,21 @@ router.post("/add", upload.single("image"), async (req, res) => {
 
 router.post("/update/:id", upload.single("image"), async (req, res) => {
   try {
-    const { categoryId, name, status } = req.body;
+    const { categoryId, name, status, description } = req.body;
 
     // Step 1: Validate categoryId
     const categoryExists = await Category.findById(categoryId);
     if (!categoryExists) {
       return res.status(400).json({ message: "Category ID does not exist" });
+    }
+
+    if (!name) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+
+    //description is required
+    if (!description) {
+      return res.status(400).json({ message: "Description is required" });
     }
 
     // Step 2: Prepare subCategoryIds
@@ -143,6 +158,7 @@ router.post("/update/:id", upload.single("image"), async (req, res) => {
       name,
       status,
       subCategoryIds,
+      description
     };
 
     // Handle new image file
@@ -192,6 +208,39 @@ router.delete("/delete/:id", async (req, res) => {
     }
   } catch (err) {
     res.status(500).json({ message: "Error deleting Course", error: err });
+  }
+});
+
+// Get latest batch ID for a course
+router.get("/latest-batch/:courseId", async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.courseId);
+    
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Find latest batch for this course by sorting in descending order
+    const latestBatch = await Batch.findOne({ 
+      courseId: req.params.courseId 
+    })
+    .sort({ createdAt: -1 }) // Sort by creation date descending
+    .select('_id'); // Only get the ID field
+
+    if (!latestBatch) {
+      return res.status(404).json({ message: "No batches found for this course" });
+    }
+
+    res.status(200).json({
+      courseId: req.params.courseId,
+      latestBatchId: latestBatch._id
+    });
+
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error fetching latest batch",
+      error: err.message 
+    });
   }
 });
 

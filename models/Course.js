@@ -25,6 +25,37 @@ const CourseScheme = new mongoose.Schema(
     status: {
       type: String,
       required: true,
+    },   
+    price: {
+      type: Number,
+    },
+    duration: {
+      type: Number,
+    },
+    level: {
+      type: String,
+    },
+    language: {
+      type: String,
+    },
+    certificate: {
+      type: String,
+    },
+    lessons: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lesson',
+      },
+    ],
+    reviews: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Review',
+      },
+    ],
+     description: {
+      type: String,
+      required: true,
     },
   },
   {

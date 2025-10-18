@@ -135,14 +135,13 @@ router.post("/add", upload.none(), async (req, res) => {
         minute: "2-digit",
         hour12: true
       })
-      .toLowerCase(); // to get "6:00pm" instead of "6:00 PM"
+      .toLowerCase(); // to get "6:00pm" instead of "6:00 PM"     
 
+  const subject = `📚 Lesson Plan for ${courseData.name} – ${batchMonth} / ${batchExists.name}`;
 
-    const subject = `📚 Lesson Plan for ${courseData.name} – ${batchMonth} / ${batchExists.name}`;
-
-    for (const student of allStudents) {
-      const htmlContent = `
- <h3>Dear ${student.username},</h3>
+  for (const student of allStudents) {
+    const htmlContent = `
+<h3>Dear ${student.username},</h3>
 <p>Here is your lesson plan to help you prepare in advance:</p>
 
 <p>📌 <b>Batch:</b> ${batchExists.name} (${batchExists.code})<br/>
@@ -150,18 +149,24 @@ router.post("/add", upload.none(), async (req, res) => {
 
 <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 14px;">
 <thead style="background-color: #f2f2f2;">
-  <tr>
-    <th>Date</th>
-    <th>Topic / Lesson Title</th>
-    <th>Notes</th>
-  </tr>
+<tr>
+  <th>Date</th>
+  <th>Topic / Lesson Title</th>
+  <th>Notes</th>
+  <th>Link</th>
+  <th>Duration</th>
+  <th>Time</th>
+</tr>
 </thead>
 <tbody>
-  <tr>
-    <td>${formattedDate}</td>
-    <td>${savedLesson.lessonTopic}</td>
-    <td>${savedLesson.lessonDescription || "—"}</td>
-  </tr>
+<tr>
+  <td>${formattedDate}</td>
+  <td>${savedLesson.lessonTopic}</td>
+  <td>${savedLesson.lessonDescription || "—"}</td>
+  <td>${savedLesson.link || "—"}</td>
+  <td>${savedLesson.lessonDuration} mins</td>
+  <td>${formattedTime}</td>
+</tr>
 </tbody>
 </table>
 
@@ -171,9 +176,9 @@ router.post("/add", upload.none(), async (req, res) => {
 <p>Best regards,<br/><b>Playful Pencil Team</b></p>
 `;
 
-      await sendHtmlEmail(student.email, subject, htmlContent);
+    await sendHtmlEmail(student.email, subject, htmlContent);
 
-    }
+  }   
 
     res.status(200).json({
       lesson: savedLesson,

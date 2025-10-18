@@ -30,5 +30,19 @@ router.get("/pgId/:id", async (req, res) => {
   }
 });
 
+// Get Page by Slug
+router.get("/slug/:slug", async (req, res) => {
+  try {
+    const page = await Page.findOne({ slug: req.params.slug });
+    if (!page) {
+      return res.status(400).json({ page: page, message: "Page not found" });
+    }
+    else {
+      res.status(200).json({ page: page, message: "Page retrieved successfully" });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching page", error: err });
+  }
+});
 
 module.exports = router;

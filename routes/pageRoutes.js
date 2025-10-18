@@ -45,12 +45,20 @@ router.post("/add", upload.single("image"), async (req, res) => {
       return res.status(400).json({ existingPage: existingPage, message: "Page title already exists" });
     }
 
+    // Generate slug from title
+    const slug = req.body.title
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9\-]/g, "");
+
     // Create new page
     const page = new Page({
       title: req.body.title,
       image: fileExtension,
       description: req.body.description,
-      status: "active"
+      status: "active",
+      slug: slug
     });
 
     // Save page to get ID
@@ -71,7 +79,6 @@ router.post("/add", upload.single("image"), async (req, res) => {
   }
 });
 
-
 // Update page with image and rename file to page ID
 router.post("/update/:id", upload.single("image"), async (req, res) => {
   try {
@@ -88,6 +95,16 @@ router.post("/update/:id", upload.single("image"), async (req, res) => {
       description,
       status
     };
+
+    // Generate slug from title (if title is provided)
+    if (title) {
+      const slug = title
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")       // Replace spaces with hyphens
+        .replace(/[^a-z0-9\-]/g, ""); // Remove invalid characters
+      updatedData.slug = slug;
+    }
 
     // Handle new image upload if provided
     if (req.file) {

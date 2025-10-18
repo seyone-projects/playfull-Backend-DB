@@ -525,7 +525,7 @@ router.post("/add", uploadMulti, async (req, res) => {
           `;
 
       await sendHtmlEmail(savedUser.email, subject, htmlContent);     
-
+ 
     }
     res.status(200).json({ user: user, message: "User added successfully" });
   } catch (error) {
@@ -538,7 +538,7 @@ router.post("/update/:id", upload.single("image"), async (req, res) => {
   try {
     const { cityId, genderId, username, email, mobile, address, landmark, pincode, whatsapp, status, joiningDate, image, parentMobile, parentEmail, parentWhatsapp } = req.body;
 
-    // ✅ Check if joiningDate is present
+    // Check if joiningDate is present
     if (!joiningDate) {
       return res.status(400).json({ message: "Joining date is required" });
     }
@@ -889,6 +889,44 @@ router.post("/single-signin-redirect-url", upload.none(), async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+
+//get all users by role with pagination
+router.get("/userRole/:role", async (req, res) => {
+  try {
+    // Get page, limit and role from params/query
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const role = req.params.role;
+
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count of users with specified role
+    const totalItems = await User.countDocuments({ role: role.toString() });
+
+    // Get paginated users filtered by role
+    const users = await User.find({ role: role.toString() })
+      .populate('genderId')
+      .populate('cityId')
+      .skip(skip)
+      .limit(limit);
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found for this role" });
+    }
+
+    res.status(200).json({
+      users: users,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems: totalItems,
+      message: `Users with role '${role}' retrieved successfully`
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching users by role", error: err.message });
   }
 });
 

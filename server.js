@@ -44,6 +44,10 @@ const batchStudentPaymentRoutesOpen = require("./routes/batchStudentPaymentRoute
 const leaveRequestRoutes = require("./routes/leaveRequestRoutes");
 const pageRoutes = require("./routes/pageRoutes");
 const pageRoutesOpen = require("./routes/pageRoutesOpen");
+const careerMailRoutes = require("./routes/careerMailRoutes");
+const contactMailRoutes = require("./routes/contactMailRoutes");
+const demoRegisterRoutesOpen = require("./routes/demoRegisterRoutesOpen");
+const userCourseRoutesOpen = require("./routes/userCourseRoutesOpen");
 
 //to create node js create and add bodyParse - to read the content from post
 const app = express();
@@ -80,6 +84,8 @@ app.use("/api/feeSchemes", feeSchemeRoutesOpen);
 app.use("/api/feeSchemePayments", feeSchemePaymentRoutesOpen);
 app.use("/api/batchStudentPayments", batchStudentPaymentRoutesOpen);
 app.use("/api/pages", pageRoutesOpen);
+app.use("/api/demoRegisters", demoRegisterRoutesOpen);
+app.use("/api/userCourses", userCourseRoutesOpen);
 
 //activating the route with authetication
 app.use("/api/sections", sectionRoutes);
@@ -97,10 +103,12 @@ app.use("/api/attendances", attendanceRoutes);
 app.use("/api/feeSchemes", feeSchemeRoutes);
 app.use("/api/feeSchemePayments", feeSchemePaymentRoutes);
 app.use("/api/batchStudents", batchStudentRoutes);
-app.use("/api/leaveRequests/", leaveRequestRoutes);
+app.use("/api/leaveRequests", leaveRequestRoutes);
 app.use("/api/pages", pageRoutes);
 
 app.use("/api/testmail", testmailRoutes);
+app.use("/api/careers", careerMailRoutes);
+app.use("/api/contacts", contactMailRoutes);
 
 //port of this application
 const PORT = process.env.PORT || 5000;

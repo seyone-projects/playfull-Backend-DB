@@ -160,8 +160,6 @@ router.get("/today/student/:userId", async (req, res) => {
   }
 });
 
-
-
 //get lesson planner by id with populate trainerId
 router.get("/lpId/:id", async (req, res) => {
   try {

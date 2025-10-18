@@ -103,7 +103,7 @@ router.post("/update/:id", upload.none(), async (req, res) => {
 
     const formattedDate = new Date(updatedLeaveRequest.lessonPlannerId.lessonDate)
       .toLocaleDateString("en-GB"); // dd/mm/yyyy
-
+    
     let subject = "";
     let htmlContent = "";
 
@@ -128,7 +128,7 @@ router.post("/update/:id", upload.none(), async (req, res) => {
     // Send email if subject/content is set
     if (subject && htmlContent) {
       await sendHtmlEmail(updatedLeaveRequest.userId.email, subject, htmlContent);
-    }
+    }    
 
     // Declare variable outside
     let savedAttendance = null;
