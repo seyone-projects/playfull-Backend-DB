@@ -486,8 +486,7 @@ router.post("/updateUsers/:id", upload.none(), async (req, res) => {
 <ul>
   <li>🆔 <b>Batch Name:</b> ${existingBatch.name}</li>
   <li>👨🏫 <b>Trainer:</b> ${trainerName}</li>
-  <li>📅 <b>Start Date:</b> ${formattedStartDate}</li>
-  <li>🕒 <b>Class Timing:</b> [6 PM]</li>
+  <li>📅 <b>Start Date:</b> ${formattedStartDate}</li>  
   <li>📍 <b>Mode:</b> [Online]</li>
 </ul>
 

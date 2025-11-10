@@ -322,27 +322,33 @@ router.post("/add", uploadMulti, async (req, res) => {
       return res.status(400).json({ message: "Pincode must contain only digits" });
     }
 
-    if (req.body.mobile.length !== 10 || !/^\d+$/.test(req.body.mobile)) {
-      return res.status(400).json({ message: "Mobile number must be exactly 10 digits" });
+    // Allow only numbers, minimum 10 digits, maximum 15 digits
+    const numberRegex = /^\d{10,15}$/;
+
+    // Mobile validation
+    if (!req.body.mobile || !numberRegex.test(req.body.mobile)) {
+      return res.status(400).json({ message: "Mobile number must be between 10 and 15 digits and contain only numbers" });
     }
 
-    if (req.body.whatsapp.length !== 10 || !/^\d+$/.test(req.body.whatsapp)) {
-      return res.status(400).json({ message: "Whatsapp number must be exactly 10 digits" });
+    // WhatsApp validation
+    if (!req.body.whatsapp || !numberRegex.test(req.body.whatsapp)) {
+      return res.status(400).json({ message: "Whatsapp number must be between 10 and 15 digits and contain only numbers" });
     }
+
 
     if (req.body.role === 'student') {
+      // Parent mobile validation for student role
       if (!req.body.parentMobile) {
         return res.status(400).json({ message: "Parent mobile number is required for student role" });
+      } else if (!numberRegex.test(req.body.parentMobile)) {
+        return res.status(400).json({ message: "Parent mobile number must be between 10 and 15 digits and contain only numbers" });
       }
 
-      // Validate parent mobile number length
-      if (req.body.parentMobile.length !== 10) {
-        return res.status(400).json({ message: "Parent mobile number must be exactly 10 digits" });
-      }
-
-      // Validate parent mobile number contains only digits  
-      if (!/^\d+$/.test(req.body.parentMobile)) {
-        return res.status(400).json({ message: "Parent mobile number must contain only digits" });
+      // Parent WhatsApp validation
+      if (req.body.parentWhatsapp) {
+        if (!numberRegex.test(req.body.parentWhatsapp)) {
+          return res.status(400).json({ message: "Parent WhatsApp number must be between 10 and 15 digits and contain only numbers" });
+        }
       }
     }
 
@@ -473,7 +479,7 @@ router.post("/add", uploadMulti, async (req, res) => {
       <ul>
         <li>🔑 <b>Username / Mobile:</b> ${savedUser.mobile}</li> 
         <li>🔒 <b>Temporary Password:</b> ${req.body.password}</li>
-        <li>🌐 <b>Login Portal:</b> <a href="https://seyone.co/" target="_blank">Click Here</a></li>
+        <li>🌐 <b>Login Portal:</b> <a href="https://trainer.playfulpencil.in/" target="_blank">Click Here</a></li>
       </ul>
       <p>👉 Please log in using the above credentials and <b>change your password </b> immediately for security.</p>
       <h4>📌 Your Responsibilities:</h4>
@@ -511,7 +517,7 @@ router.post("/add", uploadMulti, async (req, res) => {
       <ul>
         <li>🔑 <b>Username / Mobile:</b> ${savedUser.mobile}</li>
         <li>🔒 <b>Temporary Password:</b> ${req.body.password}</li>
-        <li>🌐 <b>Login Portal:</b> <a href="https://seyone.co/" target="_blank">Click Here</a></li>
+        <li>🌐 <b>Login Portal:</b> <a href="https://student.playfulpencil.in/" target="_blank">Click Here</a></li>
       </ul>
       
       <p>👉 Please log in using the above credentials and <b> change your password </b> immediately for security.</p>
@@ -524,8 +530,8 @@ router.post("/add", uploadMulti, async (req, res) => {
       
           `;
 
-      await sendHtmlEmail(savedUser.email, subject, htmlContent);     
- 
+      await sendHtmlEmail(savedUser.email, subject, htmlContent);
+
     }
     res.status(200).json({ user: user, message: "User added successfully" });
   } catch (error) {
@@ -578,19 +584,22 @@ router.post("/update/:id", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "Pincode must contain only digits" });
     }
 
-    // Validate whatsapp number length
-    if (whatsapp && whatsapp.length !== 10) {
-      return res.status(400).json({ message: "Whatsapp number must be exactly 10 digits" });
+    const MIN_LENGTH = 10; // minimum digits
+    const MAX_LENGTH = 15; // maximum digits
+
+    // Validate WhatsApp number length
+    if (whatsapp && (whatsapp.length < MIN_LENGTH || whatsapp.length > MAX_LENGTH)) {
+      return res.status(400).json({ message: `Whatsapp number must be between ${MIN_LENGTH} and ${MAX_LENGTH} digits` });
     }
 
-    // Validate whatsapp number contains only digits
+    // Validate WhatsApp number contains only digits
     if (whatsapp && !/^\d+$/.test(whatsapp)) {
       return res.status(400).json({ message: "Whatsapp number must contain only digits" });
     }
 
     // Validate mobile number length
-    if (mobile && mobile.length !== 10) {
-      return res.status(400).json({ message: "Mobile number must be exactly 10 digits" });
+    if (mobile && (mobile.length < MIN_LENGTH || mobile.length > MAX_LENGTH)) {
+      return res.status(400).json({ message: `Mobile number must be between ${MIN_LENGTH} and ${MAX_LENGTH} digits` });
     }
 
     // Validate mobile number contains only digits
@@ -606,13 +615,24 @@ router.post("/update/:id", upload.single("image"), async (req, res) => {
       }
 
       // Validate parent mobile number length
-      if (parentMobile.length !== 10) {
-        return res.status(400).json({ message: "Parent mobile number must be exactly 10 digits" });
+      if (parentMobile && (parentMobile.length < MIN_LENGTH || parentMobile.length > MAX_LENGTH)) {
+        return res.status(400).json({ message: `Parent mobile number must be between ${MIN_LENGTH} and ${MAX_LENGTH} digits` });
       }
 
       // Validate parent mobile number contains only digits
-      if (!/^\d+$/.test(parentMobile)) {
+      if (parentMobile && !/^\d+$/.test(parentMobile)) {
         return res.status(400).json({ message: "Parent mobile number must contain only digits" });
+      }
+
+      // Validate parent WhatsApp number length and digits if provided
+      if (parentWhatsapp) {
+        if (parentWhatsapp.length < MIN_LENGTH || parentWhatsapp.length > MAX_LENGTH) {
+          return res.status(400).json({ message: `Parent WhatsApp number must be between ${MIN_LENGTH} and ${MAX_LENGTH} digits` });
+        }
+
+        if (!/^\d+$/.test(parentWhatsapp)) {
+          return res.status(400).json({ message: "Parent WhatsApp number must contain only digits" });
+        }
       }
     }
 
@@ -869,13 +889,13 @@ router.post("/single-signin-redirect-url", upload.none(), async (req, res) => {
     // Set redirect URL based on role
     switch (user.role) {
       case "admin":
-        redirectUrl = `http://localhost:3000/login?mobile=${mobile}`;
+        redirectUrl = `https://admin.playfulpencil.in/login?mobile=${mobile}`;
         break;
       case "trainer":
-        redirectUrl = `http://localhost:3002/login?mobile=${mobile}`;
+        redirectUrl = `https://trainer.playfulpencil.in/login?mobile=${mobile}`;
         break;
       case "student":
-        redirectUrl = `http://localhost:3001/login?mobile=${mobile}`;
+        redirectUrl = `https://student.playfulpencil.in/login?mobile=${mobile}`;
         break;
       default:
         redirectUrl = "/";

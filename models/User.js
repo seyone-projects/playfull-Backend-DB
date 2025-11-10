@@ -34,7 +34,6 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      match: /^[0-9]{10}$/
     },
     address: {
       type: String,
@@ -50,7 +49,6 @@ const UserSchema = new mongoose.Schema(
     },
     whatsapp: {
       type: String,
-      match: /^[0-9]{10}$/
     },
     password: {
       type: String,
@@ -76,7 +74,6 @@ const UserSchema = new mongoose.Schema(
       required: function () {
         return this.role === 'student';
       },
-      match: /^[0-9]{10}$/
     },
     parentWhatsapp: {
       type: String,

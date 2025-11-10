@@ -69,7 +69,7 @@ router.post("/send-career-form", upload.none(), async (req, res) => {
       </ul>
     `;
 
-    const result = await sendHtmlEmail("ramyaj.tkp@gmail.com", subject, htmlContent);
+    const result = await sendHtmlEmail("support@seyone.co", subject, htmlContent);
 
     if (result) {
       return res.status(200).json({

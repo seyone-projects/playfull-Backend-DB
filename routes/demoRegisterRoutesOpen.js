@@ -73,7 +73,6 @@ router.post("/add", upload.none(), async (req, res) => {
     let savedDemo = await demoRegister.save();
 
     // send mail to admin
-    /** 
     // Populate referenced fields for readable names
     savedDemo = await savedDemo.populate([
       { path: "stateId", select: "name" },
@@ -128,8 +127,8 @@ router.post("/add", upload.none(), async (req, res) => {
       </ul>
     `;
 
-    await sendHtmlEmail("ramyaj.tkp@gmail.com", subject, htmlContent);
-    **/
+    await sendHtmlEmail("support@seyone.co", subject, htmlContent);
+    
     res.status(200).json({
       demoRegister: savedDemo,
       message: "Demo registration successful"

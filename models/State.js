@@ -10,21 +10,7 @@ const StateSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-    },
-    shippingCharge: {
-      type: Number,
-      required: true,
-    },
-    noOfDaysMax: {
-      type: Number,
-      required: true,
-      default: 0
-    },
-    noOfDaysMin: {
-      type: Number,
-      required: true,
-      default: 0
-    },
+    },    
     status: {
       type: String,
       required: true,
