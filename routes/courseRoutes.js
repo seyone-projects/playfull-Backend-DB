@@ -66,9 +66,9 @@ router.post("/add", upload.single("image"), async (req, res) => {
     }
 
     // Check if description is provided
-    if (!req.body.description) {
-      return res.status(400).json({ message: "Description is required" });
-    }
+    // if (!req.body.description) {
+    //   return res.status(400).json({ message: "Description is required" });
+    // }
 
     // Validate that all subcategories exist and belong to the category
     const validSubCategories = await SubCategory.find({
@@ -87,7 +87,7 @@ router.post("/add", upload.single("image"), async (req, res) => {
       name: req.body.name.trim(),
       image: fileExtension,
       status: "active",
-      description: req.body.description.trim(),
+      // description: req.body.description.trim(),
     });
 
     const savedCourse = await course.save();
@@ -121,9 +121,9 @@ router.post("/update/:id", upload.single("image"), async (req, res) => {
     }
 
     //description is required
-    if (!description) {
-      return res.status(400).json({ message: "Description is required" });
-    }
+    // if (!description) {
+    //   return res.status(400).json({ message: "Description is required" });
+    // }
 
     // Step 2: Prepare subCategoryIds
     let subCategoryIds = req.body.subCategoryIds;
@@ -158,7 +158,7 @@ router.post("/update/:id", upload.single("image"), async (req, res) => {
       name,
       status,
       subCategoryIds,
-      description
+      // description
     };
 
     // Handle new image file
@@ -241,6 +241,60 @@ router.get("/latest-batch/:courseId", async (req, res) => {
       message: "Error fetching latest batch",
       error: err.message 
     });
+  }
+});
+
+// Toggle publish status for a course
+router.put("/publish/:id", async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    
+    course.isPublished = !course.isPublished;
+    await course.save();
+
+    res.status(200).json({ 
+      course, 
+      message: `Course successfully ${course.isPublished ? 'published' : 'unpublished'}` 
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error updating publish status", error: err.message });
+  }
+});
+
+// Get all courses for admin
+router.get("/admin/all", async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const keyword = req.query.keyword || "";
+    const skip = (page - 1) * limit;
+
+    let query = {};
+    if (keyword) {
+      query.name = { $regex: keyword, $options: "i" };
+    }
+
+    const courses = await Course.find(query)
+      .populate('categoryId')
+      .populate('subCategoryIds')
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Course.countDocuments(query);
+    const totalPages = Math.ceil(total / limit);
+
+    res.status(200).json({
+      courses,
+      currentPage: page,
+      totalPages,
+      totalItems: total,
+      message: "Courses retrieved successfully"
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching courses", error: err.message });
   }
 });
 
