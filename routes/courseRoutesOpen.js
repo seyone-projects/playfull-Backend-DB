@@ -11,13 +11,13 @@ router.get("/", async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const courses = await Course.find()
+    const courses = await Course.find({ isPublished: true })
       .populate('categoryId')
       .populate('subCategoryIds')
       .skip(skip)
       .limit(limit);
 
-    const total = await Course.countDocuments();
+    const total = await Course.countDocuments({ isPublished: true });
     const totalPages = Math.ceil(total / limit);
 
     res.status(200).json({
@@ -36,7 +36,7 @@ router.get("/", async (req, res) => {
 // Get course by ID
 router.get("/cId/:id", async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
+    const course = await Course.findOne({ _id: req.params.id, isPublished: true });
     if (!course) {
       res.status(400).json({ course: course, message: "Course not found" });
     }
@@ -51,7 +51,7 @@ router.get("/cId/:id", async (req, res) => {
 // Get course by ID with populated category and subcategory details
 router.get("/cId/details/:id/", async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id)
+    const course = await Course.findOne({ _id: req.params.id, isPublished: true })
       .populate({
         path: 'categoryId',
         populate: { path: 'sectionId' }  // populate section inside category
@@ -79,12 +79,12 @@ router.get("/categoryId/:id", async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const courses = await Course.find({ categoryId: req.params.id })
+    const courses = await Course.find({ categoryId: req.params.id, isPublished: true })
       .populate('categoryId')
       .skip(skip)
       .limit(limit);
 
-    const total = await Course.countDocuments({ categoryId: req.params.id });
+    const total = await Course.countDocuments({ categoryId: req.params.id, isPublished: true });
     const totalPages = Math.ceil(total / limit);
 
     if (!courses.length) {
@@ -113,12 +113,12 @@ router.get("/subcategoryId/:id", async (req, res) => {
 
     const subcategoryObjectId = new mongoose.Types.ObjectId(req.params.id);
 
-    const courses = await Course.find({ subCategoryIds: subcategoryObjectId })
+    const courses = await Course.find({ subCategoryIds: subcategoryObjectId, isPublished: true })
       .populate('categoryId')
       .skip(skip)
       .limit(limit);
 
-    const total = await Course.countDocuments({ subCategoryIds: subcategoryObjectId });
+    const total = await Course.countDocuments({ subCategoryIds: subcategoryObjectId, isPublished: true });
     const totalPages = Math.ceil(total / limit);
 
     if (!courses.length) {
@@ -145,14 +145,14 @@ router.get("/latest", async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const courses = await Course.find()
+    const courses = await Course.find({ isPublished: true })
       .populate('categoryId')
       .populate('subCategoryIds')
       .sort({ createdAt: -1 }) // Sort by creation date in descending order
       .skip(skip)
       .limit(limit);
 
-    const total = await Course.countDocuments();
+    const total = await Course.countDocuments({ isPublished: true });
     const totalPages = Math.ceil(total / limit);
 
     if (!courses.length) {
@@ -178,14 +178,14 @@ router.get("/trending", async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const courses = await Course.find()
+    const courses = await Course.find({ isPublished: true })
       .populate('categoryId')
       .populate('subCategoryIds')
       .sort({ enrollmentCount: -1 }) // Sort by enrollment count in descending order
       .skip(skip)
       .limit(limit);
 
-    const total = await Course.countDocuments();
+    const total = await Course.countDocuments({ isPublished: true });
     const totalPages = Math.ceil(total / limit);
 
     if (!courses.length) {
